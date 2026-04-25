@@ -136,7 +136,7 @@ def add_habit():
         return jsonify({"error": "Unauthorized"}), 401
         
     data = request.get_json()
-    if not data or 'name' not in 
+    if not data or 'name' not in data:
         return jsonify({"error": "No name provided"}), 400
         
     new_habit_name = data['name']
