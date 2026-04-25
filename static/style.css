@@ -1,0 +1,144 @@
+/* Общий фон и шрифт */
+body {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* Контейнер по центру */
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 30px;
+    border-radius: 20px;
+    border: 2px solid #00d4aa;
+}
+
+h1 {
+    color: #00d4aa;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* Форма добавления */
+.add-habit {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.add-habit input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #00d4aa;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 16px;
+}
+
+.add-habit button {
+    padding: 12px 24px;
+    background: #00d4aa;
+    border: none;
+    border-radius: 8px;
+    color: #1a1a2e;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Список привычек */
+.habits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.habit-item {
+    background: rgba(0, 212, 170, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid #00d4aa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.habit-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #00d4aa;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Календарь (сетка) */
+.habit-calendar {
+    margin-top: 5px;
+}
+
+.calendar-grid {
+    display: flex;
+    gap: 8px;
+}
+
+.calendar-day {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(0, 212, 170, 0.3);
+    border-radius: 8px;
+    padding: 8px 5px;
+    text-align: center;
+    min-width: 45px;
+}
+
+/* Если привычка выполнена в этот день */
+.calendar-day.done {
+    background: rgba(0, 212, 170, 0.4);
+    border-color: #00ff88;
+    color: #00ff88;
+}
+
+.day-name {
+    font-size: 0.7em;
+    color: #aaa;
+    text-transform: capitalize;
+}
+
+.day-num {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.day-check {
+    font-size: 1.2em;
+    margin-top: 2px;
+}
+
+/* Кнопка "Отметить" */
+.complete-btn {
+    padding: 10px 20px;
+    border: 2px solid #00d4aa;
+    border-radius: 8px;
+    background: transparent;
+    color: #00d4aa;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.complete-btn:hover:not(:disabled) {
+    background: #00d4aa;
+    color: #1a1a2e;
+}
+
+.complete-btn.done {
+    background: #00ff88;
+    color: #1a1a2e;
+    border-color: #00ff88;
+    cursor: default;
+}

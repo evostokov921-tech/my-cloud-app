@@ -1,0 +1,19 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: my-cloud-app
+
+build:
+  artifacts:
+  - image: my-cloud-app
+    context: .
+    docker:
+      dockerfile: Dockerfile
+  local:
+    push: false
+
+deploy:
+  kubectl:
+    manifests:
+    - deployment.yaml
+    - configmap.yaml

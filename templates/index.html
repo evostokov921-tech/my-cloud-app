@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Трекер привычек</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid #00d4aa;
+        }
+        h1 { color: #00d4aa; text-align: center; margin-bottom: 30px; }
+        
+        .form-group { margin-bottom: 15px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #00d4aa;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #00d4aa;
+            border: none;
+            border-radius: 8px;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #00ff88; }
+        .toggle-link {
+            text-align: center;
+            margin-top: 15px;
+            color: #888;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .tracker-view { display: none; }
+        .login-view { display: block; }
+        
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            background: #ff4444;
+            color: white;
+            width: auto;
+            padding: 5px 15px;
+            font-size: 14px;
+        }
+        
+        .add-habit { display: flex; gap: 10px; margin-bottom: 30px; }
+        .add-habit button { width: auto; }
+        
+        .habits-list { display: flex; flex-direction: column; gap: 15px; }
+        .habit-item {
+            background: rgba(0, 212, 170, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #00d4aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .habit-name { font-size: 1.2em; font-weight: bold; color: #00d4aa; display: block; margin-bottom: 10px; }
+        .calendar-grid { display: flex; gap: 8px; }
+        .calendar-day {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 212, 170, 0.3);
+            border-radius: 8px;
+            padding: 8px 5px;
+            text-align: center;
+            min-width: 45px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .calendar-day:hover { background: rgba(255, 255, 255, 0.15); }
+        .calendar-day.done { background: rgba(0, 212, 170, 0.4); border-color: #00ff88; color: #00ff88; }
+        .day-name { font-size: 0.7em; color: #aaa; }
+        .day-num { font-size: 1.1em; font-weight: bold; }
+        
+        .habit-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .complete-btn {
+            padding: 10px 20px;
+            border: 2px solid #00d4aa;
+            border-radius: 8px;
+            background: transparent;
+            color: #00d4aa;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+        }
+        .complete-btn.done { background: #00ff88; color: #1a1a2e; }
+        
+        .delete-btn {
+            background: transparent;
+            border: 2px solid #ff4444;
+            color: #ff4444;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s;
+            width: auto;
+        }
+        .delete-btn:hover {
+            background: #ff4444;
+            color: white;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div id="loginView" class="login-view">
+            <h1 id="formTitle">Вход в аккаунт</h1>
+            <input type="text" id="username" placeholder="Логин">
+            <input type="password" id="password" placeholder="Пароль">
+            <button onclick="handleAuth()" id="authBtn">Войти</button>
+            <div class="toggle-link" onclick="toggleAuthMode()" id="toggleText">Нет аккаунта? Зарегистрироваться</div>
+        </div>
+
+        <div id="trackerView" class="tracker-view">
+            <div class="header-bar">
+                <h1 style="margin:0">📅 Трекер привычек</h1>
+                <button class="logout-btn" onclick="logout()">Выйти</button>
+            </div>
+            <p style="text-align:center; color:#888">Привет, <span id="currentUser" style="color:#00d4aa">User</span>!</p>
+            
+            <div class="add-habit">
+                <input type="text" id="habitInput" placeholder="Новая привычка...">
+                <button onclick="addHabit()">Добавить</button>
+            </div>
+            
+            <div id="habitsList" class="habits-list"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const currentUser = "{{ user }}";
+        
+        if (currentUser && currentUser !== "None") {
+            showTracker(currentUser);
+        }
+
+        let isLoginMode = true;
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('formTitle').innerText = isLoginMode ? 'Вход в аккаунт' : 'Регистрация';
+            document.getElementById('authBtn').innerText = isLoginMode ? 'Войти' : 'Зарегистрироваться';
+            document.getElementById('toggleText').innerText = isLoginMode ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти';
+        }
+
+        async function handleAuth() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const url = isLoginMode ? '/api/login' : '/api/register';
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await response.json();
+            if (response.ok) {
+                showTracker(username);
+            } else {
+                alert(data.error);
+            }
+        }
+
+        function showTracker(name) {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('trackerView').style.display = 'block';
+            document.getElementById('currentUser').innerText = name;
+            loadHabits();
+        }
+
+        async function logout() {
+            await fetch('/logout');
+            location.reload();
+        }
+
+        async function loadHabits() {
+            const response = await fetch('/api/habits');
+            const habits = await response.json();
+            const list = document.getElementById('habitsList');
+            list.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+            habits.forEach(habit => {
+                const div = document.createElement('div');
+                div.className = 'habit-item';
+                const isDoneToday = habit.dates && habit.dates.includes(today);
+                const calendarHTML = generateCalendar(habit);
+                div.innerHTML = `
+                    <div class="habit-info">
+                        <span class="habit-name">${habit.name}</span>
+                        <div class="habit-calendar">${calendarHTML}</div>
+                    </div>
+                    <div class="habit-actions">
+                        <button class="complete-btn ${isDoneToday ? 'done' : ''}" 
+                                onclick="completeHabit(${habit.id})" 
+                                ${isDoneToday ? 'disabled' : ''}>
+                            ${isDoneToday ? '✓ Готово' : '✓ Отметить'}
+                        </button>
+                        <button class="delete-btn" onclick="deleteHabit(${habit.id})" title="Удалить привычку">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function generateCalendar(habitObj) {
+            const dates = habitObj.dates || [];
+            const habitId = habitObj.id;
+            let html = '<div class="calendar-grid">';
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const dayName = date.toLocaleDateString('ru', { weekday: 'short' });
+                const dayNum = date.getDate();
+                const isDone = dates.includes(dateStr);
+                html += `
+                    <div class="calendar-day ${isDone ? 'done' : ''}" onclick="toggleDate(${habitId}, '${dateStr}', this)">
+                        <div class="day-name">${dayName}</div>
+                        <div class="day-num">${dayNum}</div>
+                        ${isDone ? '<div class="day-check">✓</div>' : ''}
+                    </div>
+                `;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        async function toggleDate(habitId, dateStr, element) {
+            const response = await fetch(`/api/habits/${habitId}/complete/${dateStr}`, { method: 'POST' });
+            if (response.ok) {
+                element.classList.toggle('done');
+                const checkDiv = element.querySelector('.day-check');
+                if (element.classList.contains('done')) {
+                    if (!checkDiv) {
+                        const newCheck = document.createElement('div');
+                        newCheck.className = 'day-check';
+                        newCheck.innerHTML = '✓';
+                        element.appendChild(newCheck);
+                    }
+                } else {
+                    if (checkDiv) checkDiv.remove();
+                }
+            }
+        }
+
+        async function addHabit() {
+            const input = document.getElementById('habitInput');
+            const name = input.value.trim();
+            if (!name) return alert('Введите название!');
+            await fetch('/api/habits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            });
+            input.value = '';
+            loadHabits();
+        }
+
+        async function completeHabit(habitId) {
+            const today = new Date().toISOString().split('T')[0];
+            await toggleDate(habitId, today, document.querySelector('.calendar-day.done'));
+            loadHabits();
+        }
+
+        async function deleteHabit(habitId) {
+            if (!confirm('Ты точно хочешь удалить эту привычку? Все данные будут потеряны.')) {
+                return;
+            }
+            
+            const response = await fetch(`/api/habits/${habitId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                loadHabits();
+            } else {
+                alert('Ошибка при удалении');
+            }
+        }
+    </script>
+</body>
+</html>
