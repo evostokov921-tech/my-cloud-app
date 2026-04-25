@@ -2,45 +2,31 @@ import os
 import sqlite3
 import hashlib
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
-import psycopg2
-from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_session'
 
-# Получаем ссылку на базу данных из переменных окружения
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
 def get_db():
-    if DATABASE_URL:
-        # Если есть PostgreSQL - используем его
-        conn = psycopg2.connect(DATABASE_URL)
-        return conn
-    else:
-        # Иначе используем SQLite (для тестов)
-        conn = sqlite3.connect('habits.db')
-        conn.row_factory = sqlite3.Row
-        return conn
+    conn = sqlite3.connect('habits.db')
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
     conn = get_db()
     cur = conn.cursor()
     
-    # Таблица пользователей
     cur.execute('''CREATE TABLE IF NOT EXISTS users
-                    (id SERIAL PRIMARY KEY, 
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                      username TEXT UNIQUE NOT NULL, 
                      password TEXT NOT NULL)''')
                      
-    # Таблица привычек
     cur.execute('''CREATE TABLE IF NOT EXISTS habits
-                    (id SERIAL PRIMARY KEY, 
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                      name TEXT NOT NULL, 
                      user_id INTEGER)''')
 
-    # Таблица выполнений
     cur.execute('''CREATE TABLE IF NOT EXISTS completions
-                    (id SERIAL PRIMARY KEY, 
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                      habit_id INTEGER, 
                      date TEXT, 
                      FOREIGN KEY(habit_id) REFERENCES habits(id),
@@ -50,11 +36,7 @@ def init_db():
     cur.close()
     conn.close()
 
-# Инициализируем БД при старте
-try:
-    init_db()
-except:
-    pass 
+init_db()
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -82,10 +64,10 @@ def register():
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute('INSERT INTO users (username, password) VALUES (%s, %s)', 
+        cur.execute('INSERT INTO users (username, password) VALUES (?, ?)', 
                      (username, hash_password(password)))
         conn.commit()
-        cur.execute('SELECT * FROM users WHERE username = %s', (username,))
+        cur.execute('SELECT * FROM users WHERE username = ?', (username,))
         user = cur.fetchone()
         session['user_id'] = user['id']
         session['username'] = user['username']
@@ -104,8 +86,8 @@ def login():
     password = data.get('password')
     
     conn = get_db()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute('SELECT * FROM users WHERE username = %s AND password = %s', 
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM users WHERE username = ? AND password = ?', 
                 (username, hash_password(password)))
     user = cur.fetchone()
     cur.close()
@@ -124,14 +106,14 @@ def get_habits():
         return jsonify([]), 401
         
     conn = get_db()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute('SELECT * FROM habits WHERE user_id = %s', (session['user_id'],))
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM habits WHERE user_id = ?', (session['user_id'],))
     habits = cur.fetchall()
     
     result = []
     for habit in habits:
         habit_dict = dict(habit)
-        cur.execute('SELECT date FROM completions WHERE habit_id = %s', (habit['id'],))
+        cur.execute('SELECT date FROM completions WHERE habit_id = ?', (habit['id'],))
         completions = cur.fetchall()
         habit_dict['dates'] = [row['date'] for row in completions]
         result.append(habit_dict)
@@ -146,13 +128,13 @@ def add_habit():
         return jsonify({"error": "Unauthorized"}), 401
         
     data = request.get_json()
-    if not data or 'name' not in data:  # <-- ИСПРАВЛЕНО ЗДЕСЬ
+    if not data or 'name' not in data:
         return jsonify({"error": "No name provided"}), 400
         
     new_habit_name = data['name']
     conn = get_db()
     cur = conn.cursor()
-    cur.execute('INSERT INTO habits (name, user_id) VALUES (%s, %s)', 
+    cur.execute('INSERT INTO habits (name, user_id) VALUES (?, ?)', 
                  (new_habit_name, session['user_id']))
     conn.commit()
     cur.close()
@@ -167,13 +149,13 @@ def complete_habit(habit_id, date):
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute('SELECT id FROM completions WHERE habit_id = %s AND date = %s', (habit_id, date))
+        cur.execute('SELECT id FROM completions WHERE habit_id = ? AND date = ?', (habit_id, date))
         existing = cur.fetchone()
         
         if existing:
-            cur.execute('DELETE FROM completions WHERE habit_id = %s AND date = %s', (habit_id, date))
+            cur.execute('DELETE FROM completions WHERE habit_id = ? AND date = ?', (habit_id, date))
         else:
-            cur.execute('INSERT INTO completions (habit_id, date) VALUES (%s, %s)', (habit_id, date))
+            cur.execute('INSERT INTO completions (habit_id, date) VALUES (?, ?)', (habit_id, date))
         
         conn.commit()
         cur.close()
@@ -191,8 +173,8 @@ def delete_habit(habit_id):
         
     conn = get_db()
     cur = conn.cursor()
-    cur.execute('DELETE FROM habits WHERE id = %s AND user_id = %s', (habit_id, session['user_id']))
-    cur.execute('DELETE FROM completions WHERE habit_id = %s', (habit_id,))
+    cur.execute('DELETE FROM habits WHERE id = ? AND user_id = ?', (habit_id, session['user_id']))
+    cur.execute('DELETE FROM completions WHERE habit_id = ?', (habit_id,))
     conn.commit()
     cur.close()
     conn.close()
